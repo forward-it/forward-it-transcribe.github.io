@@ -30,7 +30,7 @@ function App() {
 
     const [transcribingError, setTranscribingError] = useState<string | undefined>();
     const [duration, setDuration] = useState<number>(0);
-    const [transcript, setTranscript] = React.useState("Hi, this is Stephanie. I'm calling from Linux World and Network World Conference and Expo,  also hosting the Smalltalk Solutions Conference. The trade show opens tomorrow, and we're really  excited you're registered to attend. Just to remind you, the trade show is at the Metro  Toronto Convention Centre in the North Building on Front Street. Tomorrow at 9.45 a.m., begins  IBM's one-hour keynote, which is a definite must-see. And then the trade show floor opens  up at 11 a.m. until 6 p.m. On Wednesday, the opening keynote is Samsung at 9.45 a.m., and  the floor hours are 11 to 5 p.m. Both days are packed with great exhibit features. If  you didn't receive your badge in the mail, make sure when you arrive to have your ID  to pick up your badge before entering the 20,000-square-foot exhibit floor. Don't forget  your comfortable shoes. Thanks again for registering, and we wish you a wonderful time at the show.");
+    const [transcript, setTranscript] = React.useState("");
 
     const startRecording = async () => {
         setTranscribingError(undefined);
@@ -175,7 +175,7 @@ function App() {
                 transcribeAudio(audioData);
             }
         }
-    }, [audioData, duration]);
+    }, [audioData]);
 
     return (
       <ChakraProvider>
