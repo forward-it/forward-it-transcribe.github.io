@@ -11,16 +11,24 @@ function App() {
     const [isTranscribing, setIsTranscribing] = useState(false);
 
     const [recordingTime, setRecordingTime] = useState(0); // in seconds
+    const [transcribingTimeRemaining, setTranscribingTimeRemaining] = useState(0); // in seconds
+
     const recordingTimerRef = useRef<NodeJS.Timer | null>(null);
+    const transcribingTimerRef = useRef<NodeJS.Timer | null>(null);
+
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     const [selectedSample, setSelectedSample] = useState<string>("");
     const [audioData, setAudioData] = useState<string | undefined>();
 
+    const [transcribingError, setTranscribingError] = useState<string | undefined>();
+    const [duration, setDuration] = useState<number>(0);
     const [language, setLanguage] = React.useState("");
     const [transcript, setTranscript] = React.useState("");
     const startRecording = async () => {
+        setTranscribingError(undefined);
         setSelectedSample("");
         setAudioData(undefined);
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -43,7 +51,6 @@ function App() {
         if(recordingTimerRef.current) {
             clearInterval(recordingTimerRef.current);
         }
-
         setIsRecording(false);
         setRecordingTime(0);
     }
@@ -78,13 +85,20 @@ function App() {
         }
     };
 
+    const onLoadedMetadata = () => {
+        if (audioRef.current) {
+            setDuration(audioRef.current.duration);
+        }
+    };
+
     useEffect(() => {
         const transcribeAudio = async (audioSource: string) => {
             try {
+                setTranscribingError(undefined);
                 let audioBlob: Blob | undefined;
 
                 const response = await fetch(audioSource);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                if (!response.ok) setTranscribingError(`HTTP error: ${response.status}`);
                 audioBlob = await response.blob();
 
                 // Convert the Blob to base64
@@ -94,6 +108,9 @@ function App() {
                     const base64Audio = reader.result as string;
                     if(base64Audio) {
                         setIsTranscribing(true);
+                        transcribingTimerRef.current = setInterval(() => {
+                            setTranscribingTimeRemaining((prevTime) => prevTime - 1);
+                        }, 1000);
                         fetch("https://api.forwardit.lv/demo/transcribe", {
                             method: 'POST',
                             headers: {
@@ -106,10 +123,15 @@ function App() {
                             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                             return response.json();
                         }).then(data => {
-                            setTranscript(data[1]);
-                            setLanguage(data[0]);
+                            setTranscript(data.text);
+                            setLanguage(data.language);
+                        }).catch(error => {
+                            setTranscribingError(error?.message || "Demo page is not working at the moment. Please try again later")
                         }).finally(() => {
                             setIsTranscribing(false);
+                            if(transcribingTimerRef.current) {
+                                clearInterval(transcribingTimerRef.current);
+                            }
                         })
                     }
                 };
@@ -119,9 +141,13 @@ function App() {
         };
 
         if (audioData) {
-            transcribeAudio(audioData);
+            if(duration > 300) {
+                setTranscribingError("Audio file is too long. Please choose a shorter file");
+            } else {
+                transcribeAudio(audioData);
+            }
         }
-    }, [audioData, language]);
+    }, [audioData, duration]);
 
 
   return (
@@ -132,11 +158,11 @@ function App() {
                         <Stack direction="column" spacing={6} align={"center"} w={"100%"}>
                             <Stack direction="column" spacing={1} align={"center"}>
                                 <Box><img src={logo} className="app-logo" alt={"logo"}/></Box>
-                                <Text fontSize="sm">Audio Transcription Services</Text>
+                                <Text fontSize="sm">Audio Transcription Demo</Text>
                             </Stack>
                             <Box w="100%" bg="#191A21FF" p={6} pb={4}  borderRadius='lg' overflow='hidden'>
                                 <Stack direction="column" spacing={6} align={"center"}>
-                                    <Text fontSize={"md"} fontWeight={"bold"}>1. Select a sample or upload your own audio file</Text>
+                                    <Text fontSize={"md"} fontWeight={"bold"}>1. Choose audio file*</Text>
                                     <Stack direction="column" spacing={1} align="center" w={"100%"}>
                                         <Text fontSize="sm">Select a sample:</Text>
                                         <Select
@@ -170,16 +196,23 @@ function App() {
                                             onClick={isRecording ? stopRecording : startRecording}>{isRecording ? "Stop" : "Record"}
                                         </Button>
                                     </Stack>
-                                    <Stack direction={"column"} spacing={4} align={"center"} w={"100%"}>
-                                        {isRecording && <Text fontSize='4xl'>{formatTime(recordingTime)}</Text>}
-                                    </Stack>
+                                    {isRecording && <Text fontSize='4xl'>{formatTime(recordingTime)}</Text>}
+                                    <Text fontSize={"xs"}>* Demo page allows transcribing up to 5 minute long records</Text>
+
                                 </Stack>
                             </Box>
                             <Box w="100%" bg="#191A21FF" p={6} borderRadius='lg' overflow='hidden'>
                                 <Stack direction="column" spacing={6} align={"center"}>
-                                    <Text fontSize={"md"} fontWeight={"bold"}>2. Get transcription and summary within seconds</Text>
-                                    {audioData && <audio src={audioData} controls />}
-                                    {isTranscribing && <CircularProgress isIndeterminate color={"#e33832"}/>}
+                                    <Text fontSize={"md"} fontWeight={"bold"}>2. Get transcription</Text>
+                                    {audioData && <audio src={audioData} ref={audioRef} onLoadedMetadata={onLoadedMetadata}
+                                                         controls />}
+                                    {isTranscribing && (
+                                        <Stack direction={"column"}>
+                                            <CircularProgress isIndeterminate color={"#e33832"}/>
+                                            <Text fontSize={"sm"}>Please wait while we transcribe your audio</Text>
+                                            <Text fontSize='4xl'>Approximate time remaining: {transcribingTimeRemaining > 0 ? formatTime(transcribingTimeRemaining) : "soon"}</Text>
+                                        </Stack>
+                                    )}
                                     {!isTranscribing && transcript.length && (
                                         <Textarea
                                             variant='outline'
@@ -189,6 +222,7 @@ function App() {
                                             readOnly
                                         />
                                     )}
+                                    {transcribingError && <Text fontSize={"sm"} color={"red"}>{transcribingError}</Text>}
                                 </Stack>
                             </Box>
                         </Stack>
