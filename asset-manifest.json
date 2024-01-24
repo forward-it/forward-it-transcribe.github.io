@@ -1,17 +1,20 @@
 {
   "files": {
     "main.css": "/static/css/main.8b600fd3.css",
-    "main.js": "/static/js/main.4bbf849f.js",
+    "main.js": "/static/js/main.cef3d381.js",
     "static/js/787.d4aba7ab.chunk.js": "/static/js/787.d4aba7ab.chunk.js",
-    "static/media/lr1-laika-zinas.ogg": "/static/media/lr1-laika-zinas.49bab290518162ed3df4.ogg",
+    "static/media/LV-radio.mp4": "/static/media/LV-radio.305d7289c3bf9349e7d4.mp4",
+    "static/media/EN-voicemail.mp3": "/static/media/EN-voicemail.9dca97f8e89038e01081.mp3",
+    "static/media/LV-parliament.mp3": "/static/media/LV-parliament.1a909b06856afafba903.mp3",
+    "static/media/LV-woman.mp3": "/static/media/LV-woman.24748eea0002893117a9.mp3",
     "static/media/forwardit-logo-white-red.png": "/static/media/forwardit-logo-white-red.82d7efe45450a1bdc574.png",
     "index.html": "/index.html",
     "main.8b600fd3.css.map": "/static/css/main.8b600fd3.css.map",
-    "main.4bbf849f.js.map": "/static/js/main.4bbf849f.js.map",
+    "main.cef3d381.js.map": "/static/js/main.cef3d381.js.map",
     "787.d4aba7ab.chunk.js.map": "/static/js/787.d4aba7ab.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.8b600fd3.css",
-    "static/js/main.4bbf849f.js"
+    "static/js/main.cef3d381.js"
   ]
 }
