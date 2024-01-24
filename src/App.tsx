@@ -1,9 +1,10 @@
 import React, {useState, useRef, useEffect} from 'react';
-import {ChakraProvider, Box, Button, Container, Stack, Select, Text, Textarea, CircularProgress} from '@chakra-ui/react'
+import {ChakraProvider, Box, Button, Container, Stack, Select, Text, CircularProgress} from '@chakra-ui/react'
 import { FaMicrophone, FaFileUpload, FaStopCircle } from "react-icons/fa";
 
 import './App.css';
 import logo from'./forwardit-logo-white-red.png';
+import {AutoResizeTextarea} from "./components/AutoResizeTextArea";
 const sampleLV = require("./samples/LV-woman.mp3");
 const sampleLVParliament = require("./samples/LV-parliament.mp3");
 const sampleLVRadio = require("./samples/LV-radio.mp4");
@@ -29,8 +30,7 @@ function App() {
 
     const [transcribingError, setTranscribingError] = useState<string | undefined>();
     const [duration, setDuration] = useState<number>(0);
-    const [language, setLanguage] = React.useState("");
-    const [transcript, setTranscript] = React.useState("");
+    const [transcript, setTranscript] = React.useState("Hi, this is Stephanie. I'm calling from Linux World and Network World Conference and Expo,  also hosting the Smalltalk Solutions Conference. The trade show opens tomorrow, and we're really  excited you're registered to attend. Just to remind you, the trade show is at the Metro  Toronto Convention Centre in the North Building on Front Street. Tomorrow at 9.45 a.m., begins  IBM's one-hour keynote, which is a definite must-see. And then the trade show floor opens  up at 11 a.m. until 6 p.m. On Wednesday, the opening keynote is Samsung at 9.45 a.m., and  the floor hours are 11 to 5 p.m. Both days are packed with great exhibit features. If  you didn't receive your badge in the mail, make sure when you arrive to have your ID  to pick up your badge before entering the 20,000-square-foot exhibit floor. Don't forget  your comfortable shoes. Thanks again for registering, and we wish you a wonderful time at the show.");
 
     const startRecording = async () => {
         setTranscribingError(undefined);
@@ -77,6 +77,19 @@ function App() {
         const file = event.target.files[0];
         if (file) {
             setAudioData(URL.createObjectURL(file));
+            // Reset duration each time a new file is uploaded
+            setDuration(0);
+        }
+    };
+
+    const onLoadedMetadata = () => {
+        if (audioRef.current) {
+            const newDuration = Math.round(audioRef.current.duration);
+            if (newDuration > 0 && newDuration !== Infinity) {
+                setDuration(newDuration);
+            } else {
+                setDuration(0);
+            }
         }
     };
 
@@ -87,16 +100,6 @@ function App() {
         } else {
             setAudioData(undefined);
             setSelectedSample("");
-        }
-    };
-
-    const onLoadedMetadata = () => {
-        if (audioRef.current) {
-            if (audioRef.current.duration > 0 && audioRef.current.duration !== Infinity) {
-                setDuration(Math.round(audioRef.current.duration));
-            } else {
-                setDuration(0)
-            }
         }
     };
 
@@ -152,7 +155,6 @@ function App() {
                             return response.json();
                         }).then(data => {
                             setTranscript(data.text.startsWith(" ") ? data.text.substring(1) : data.text);
-                            setLanguage(data.language);
                         }).catch(error => {
                             setTranscribingError(error?.message || "Demo page is not working at the moment. Please try again later")
                         }).finally(() => {
@@ -176,7 +178,9 @@ function App() {
     }, [audioData, duration]);
 
 
-  return (
+  // @ts-ignore
+    // @ts-ignore
+    return (
       <ChakraProvider>
           <div className="app">
                 <header className="app-header">
@@ -243,13 +247,8 @@ function App() {
                                         </Stack>
                                     )}
                                     {!isTranscribing && transcript.length && (
-                                        <Textarea
-                                            variant='outline'
-                                            placeholder='Filled'
+                                        <AutoResizeTextarea
                                             value={transcript}
-                                            size={"md"}
-                                            h={"auto"}
-                                            readOnly
                                         />
                                     )}
                                     {transcribingError && <Text fontSize={"sm"} color={"red"}>{transcribingError}</Text>}
