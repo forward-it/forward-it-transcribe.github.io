@@ -177,9 +177,6 @@ function App() {
         }
     }, [audioData, duration]);
 
-
-  // @ts-ignore
-    // @ts-ignore
     return (
       <ChakraProvider>
           <div className="app">
