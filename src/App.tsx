@@ -28,7 +28,6 @@ function App() {
     const [language, setLanguage] = React.useState("");
     const [transcript, setTranscript] = React.useState("");
 
-    useEffect(() => setTranscribingTimeRemaining(duration + 20), [duration])
     const startRecording = async () => {
         setTranscribingError(undefined);
         setSelectedSample("");
@@ -89,15 +88,32 @@ function App() {
 
     const onLoadedMetadata = () => {
         if (audioRef.current) {
-            setDuration(audioRef.current.duration);
+            if (audioRef.current.duration > 0 && audioRef.current.duration !== Infinity) {
+                setDuration(audioRef.current.duration);
+            } else {
+                setDuration(0)
+            }
         }
     };
 
     const startCountdown = () => {
+        clearCountdown(); // Clear any existing interval
         transcribingTimerRef.current = setInterval(() => {
-            setTranscribingTimeRemaining((prevTime) => prevTime - 1);
+            setTranscribingTimeRemaining((prevTime) => {
+                if (prevTime > 0) return prevTime - 1;
+                clearCountdown();
+                return 0;
+            });
         }, 1000);
     }
+
+    const clearCountdown = () => {
+        if(transcribingTimerRef.current) {
+            clearInterval(transcribingTimerRef.current);
+        }
+    }
+
+    useEffect(() => setTranscribingTimeRemaining(duration + 20), [duration])
 
     useEffect(() => {
         const transcribeAudio = async (audioSource: string) => {
@@ -116,7 +132,9 @@ function App() {
                     const base64Audio = reader.result as string;
                     if(base64Audio) {
                         setIsTranscribing(true);
-                        startCountdown();
+                        if(transcribingTimeRemaining > 0) {
+                            startCountdown();
+                        }
                         fetch("https://api.forwardit.lv/demo/transcribe", {
                             method: 'POST',
                             headers: {
@@ -135,9 +153,7 @@ function App() {
                             setTranscribingError(error?.message || "Demo page is not working at the moment. Please try again later")
                         }).finally(() => {
                             setIsTranscribing(false);
-                            if(transcribingTimerRef.current) {
-                                clearInterval(transcribingTimerRef.current);
-                            }
+                            setTranscribingTimeRemaining(0)
                         })
                     }
                 };
@@ -215,8 +231,8 @@ function App() {
                                     {isTranscribing && (
                                         <Stack direction={"column"} align={"center"}>
                                             <CircularProgress isIndeterminate color={"#e33832"}/>
-                                            <Text fontSize={"sm"} pt={2}>Please wait while we transcribe your audio. Approximate time remaining:</Text>
-                                            <Text fontSize='2xl'>{transcribingTimeRemaining > 0 ? formatTime(transcribingTimeRemaining) : "very soon"}</Text>
+                                            <Text fontSize={"sm"} pt={2}>Please wait while we transcribe your audio. {duration ? "Approximate time remaining:" : ""}</Text>
+                                            {duration && <Text fontSize='2xl'>{transcribingTimeRemaining > 0 ? formatTime(transcribingTimeRemaining) : "very soon"}</Text>}
                                         </Stack>
                                     )}
                                     {!isTranscribing && transcript.length && (
