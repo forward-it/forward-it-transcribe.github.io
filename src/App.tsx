@@ -4,7 +4,11 @@ import { FaMicrophone, FaFileUpload, FaStopCircle } from "react-icons/fa";
 
 import './App.css';
 import logo from'./forwardit-logo-white-red.png';
-const sample = require("./lr1-laika-zinas.ogg");
+const sampleLV = require("./samples/LV-woman.mp3");
+const sampleLVParliament = require("./samples/LV-parliament.mp3");
+const sampleLVRadio = require("./samples/LV-radio.mp4");
+const sampleEN = require("./samples/EN-voicemail.mp3");
+
 
 function App() {
     const [isRecording, setIsRecording] = useState(false);
@@ -89,7 +93,7 @@ function App() {
     const onLoadedMetadata = () => {
         if (audioRef.current) {
             if (audioRef.current.duration > 0 && audioRef.current.duration !== Infinity) {
-                setDuration(audioRef.current.duration);
+                setDuration(Math.round(audioRef.current.duration));
             } else {
                 setDuration(0)
             }
@@ -147,7 +151,7 @@ function App() {
                             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                             return response.json();
                         }).then(data => {
-                            setTranscript(data.text);
+                            setTranscript(data.text.startsWith(" ") ? data.text.substring(1) : data.text);
                             setLanguage(data.language);
                         }).catch(error => {
                             setTranscribingError(error?.message || "Demo page is not working at the moment. Please try again later")
@@ -193,7 +197,10 @@ function App() {
                                             size='md'
                                             onChange={handleSampleChange}>
                                             <option value={""}>None</option>
-                                            <option value={sample}>Latvian Radio: Weather Forecast</option>
+                                            <option value={sampleLV}>LV: Woman Speaking</option>
+                                            <option value={sampleLVParliament}>LV: Parliament Session Opening</option>
+                                            <option value={sampleLVRadio}>LV: Latvian Radio Weather Forecast</option>
+                                            <option value={sampleEN}>EN: Voicemail Recording</option>
                                         </Select>
                                     </Stack>
                                     <Stack direction="row" spacing={4} align="center">
@@ -241,6 +248,7 @@ function App() {
                                             placeholder='Filled'
                                             value={transcript}
                                             size={"md"}
+                                            h={"auto"}
                                             readOnly
                                         />
                                     )}
