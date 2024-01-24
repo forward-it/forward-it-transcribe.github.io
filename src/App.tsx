@@ -8,7 +8,7 @@ const sample = require("./lr1-laika-zinas.ogg");
 
 function App() {
     const [isRecording, setIsRecording] = useState(false);
-    const [isTranscribing, setIsTranscribing] = useState(false);
+    const [isTranscribing, setIsTranscribing] = useState(true);
 
     const [recordingTime, setRecordingTime] = useState(0); // in seconds
     const [transcribingTimeRemaining, setTranscribingTimeRemaining] = useState(0); // in seconds
@@ -27,6 +27,8 @@ function App() {
     const [duration, setDuration] = useState<number>(0);
     const [language, setLanguage] = React.useState("");
     const [transcript, setTranscript] = React.useState("");
+
+    useEffect(() => setTranscribingTimeRemaining(duration + 20), [duration])
     const startRecording = async () => {
         setTranscribingError(undefined);
         setSelectedSample("");
@@ -91,6 +93,12 @@ function App() {
         }
     };
 
+    const startCountdown = () => {
+        transcribingTimerRef.current = setInterval(() => {
+            setTranscribingTimeRemaining((prevTime) => prevTime - 1);
+        }, 1000);
+    }
+
     useEffect(() => {
         const transcribeAudio = async (audioSource: string) => {
             try {
@@ -108,9 +116,7 @@ function App() {
                     const base64Audio = reader.result as string;
                     if(base64Audio) {
                         setIsTranscribing(true);
-                        transcribingTimerRef.current = setInterval(() => {
-                            setTranscribingTimeRemaining((prevTime) => prevTime - 1);
-                        }, 1000);
+                        startCountdown();
                         fetch("https://api.forwardit.lv/demo/transcribe", {
                             method: 'POST',
                             headers: {
@@ -207,10 +213,10 @@ function App() {
                                     {audioData && <audio src={audioData} ref={audioRef} onLoadedMetadata={onLoadedMetadata}
                                                          controls />}
                                     {isTranscribing && (
-                                        <Stack direction={"column"}>
+                                        <Stack direction={"column"} align={"center"}>
                                             <CircularProgress isIndeterminate color={"#e33832"}/>
-                                            <Text fontSize={"sm"}>Please wait while we transcribe your audio</Text>
-                                            <Text fontSize='4xl'>Approximate time remaining: {transcribingTimeRemaining > 0 ? formatTime(transcribingTimeRemaining) : "soon"}</Text>
+                                            <Text fontSize={"sm"} pt={2}>Please wait while we transcribe your audio. Approximate time remaining:</Text>
+                                            <Text fontSize='2xl'>{transcribingTimeRemaining > 0 ? formatTime(transcribingTimeRemaining) : "very soon"}</Text>
                                         </Stack>
                                     )}
                                     {!isTranscribing && transcript.length && (
