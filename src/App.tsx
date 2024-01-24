@@ -8,7 +8,7 @@ const sample = require("./lr1-laika-zinas.ogg");
 
 function App() {
     const [isRecording, setIsRecording] = useState(false);
-    const [isTranscribing, setIsTranscribing] = useState(true);
+    const [isTranscribing, setIsTranscribing] = useState(false);
 
     const [recordingTime, setRecordingTime] = useState(0); // in seconds
     const [transcribingTimeRemaining, setTranscribingTimeRemaining] = useState(0); // in seconds
