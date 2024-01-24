@@ -96,7 +96,10 @@ function App() {
     const handleSampleChange = (event: any) => {
         if(event.target.value.length) {
             setAudioData(event.target.value);
-            setSelectedSample(event.target.value)
+            setSelectedSample(event.target.value);
+
+            setDuration(0);
+            setTranscribingTimeRemaining(0);
         } else {
             setAudioData(undefined);
             setSelectedSample("");
@@ -139,7 +142,8 @@ function App() {
                     const base64Audio = reader.result as string;
                     if(base64Audio) {
                         setIsTranscribing(true);
-                        if(transcribingTimeRemaining > 0) {
+                        if(duration > 0) {
+                            setTranscribingTimeRemaining(duration + 20);
                             startCountdown();
                         }
                         fetch("https://api.forwardit.lv/demo/transcribe", {
