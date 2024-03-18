@@ -16,7 +16,8 @@ function App() {
     const [isTranscribing, setIsTranscribing] = useState(false);
 
     const [recordingTime, setRecordingTime] = useState(0); // in seconds
-    const [transcribingTimeRemaining, setTranscribingTimeRemaining] = useState(0); // in seconds
+
+    const [audioFile, setAudioFile] = useState<File | null>(null); // Updated state to store the file object
 
     const recordingTimerRef = useRef<NodeJS.Timer | null>(null);
     const transcribingTimerRef = useRef<NodeJS.Timer | null>(null);
@@ -36,18 +37,31 @@ function App() {
         setTranscribingError(undefined);
         setSelectedSample("");
         setAudioData(undefined);
+        setAudioFile(null); // Ensure audioFile state is reset
+
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorderRef.current = new MediaRecorder(stream);
+        const recordedChunks: any[] = []; // Store recorded chunks here
+
         mediaRecorderRef.current.ondataavailable = (e) => {
-            setAudioData(URL.createObjectURL(e.data));
+            if (e.data.size > 0) {
+                recordedChunks.push(e.data);
+            }
         };
+
+        mediaRecorderRef.current.onstop = () => {
+            // Convert recorded chunks to a single Blob
+            const audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+            setAudioData(URL.createObjectURL(audioBlob)); // For playback
+            setAudioFile(new File([audioBlob], "recording.webm", { type: 'audio/webm' })); // Prepare for upload
+        };
+
         mediaRecorderRef.current.start();
         recordingTimerRef.current = setInterval(() => {
             setRecordingTime((prevTime) => prevTime + 1);
         }, 1000);
         setIsRecording(true);
-    }
-
+    };
 
     const stopRecording = () => {
         if(mediaRecorderRef.current?.stream) {
@@ -76,7 +90,8 @@ function App() {
     const handleFileUpload = (event: any) => {
         const file = event.target.files[0];
         if (file) {
-            setAudioData(URL.createObjectURL(file));
+            setAudioFile(file); // Update to store file object
+            setAudioData(URL.createObjectURL(file)); // For local playback only
             // Reset duration each time a new file is uploaded
             setDuration(0);
         }
@@ -93,29 +108,33 @@ function App() {
         }
     };
 
-    const handleSampleChange = (event: any) => {
-        if(event.target.value.length) {
-            setAudioData(event.target.value);
-            setSelectedSample(event.target.value);
+    const handleSampleChange = async (event: any) => {
+        const selectedURL = event.target.value;
+        if (selectedURL) {
+            // Fetch the audio file from the URL
+            try {
+                const response = await fetch(selectedURL);
+                if (!response.ok) throw new Error('Network response was not ok.');
+                const blob = await response.blob();
 
-            setDuration(0);
-            setTranscribingTimeRemaining(0);
+                // Create a File object from the Blob
+                const file = new File([blob], "sampleAudio", { type: blob.type });
+
+                setAudioFile(file); // Now you have a File object to send to the server
+                setAudioData(URL.createObjectURL(blob)); // For local playback
+
+                setSelectedSample(selectedURL);
+                setDuration(0);
+            } catch (error) {
+                console.error('Error fetching audio file:', error);
+                setTranscribingError('Failed to fetch audio file.');
+            }
         } else {
             setAudioData(undefined);
             setSelectedSample("");
+            setAudioFile(null); // Reset or clear the file state
         }
     };
-
-    const startCountdown = () => {
-        clearCountdown(); // Clear any existing interval
-        transcribingTimerRef.current = setInterval(() => {
-            setTranscribingTimeRemaining((prevTime) => {
-                if (prevTime > 0) return prevTime - 1;
-                clearCountdown();
-                return 0;
-            });
-        }, 1000);
-    }
 
     const clearCountdown = () => {
         if(transcribingTimerRef.current) {
@@ -123,55 +142,36 @@ function App() {
         }
     }
 
-    useEffect(() => setTranscribingTimeRemaining(duration + 20), [duration])
-
     useEffect(() => {
-        const transcribeAudio = async (audioSource: string) => {
+        const transcribeAudio = async (audioData: string) => {
             try {
                 setTranscribingError(undefined);
-                let audioBlob: Blob | undefined;
-
-                const response = await fetch(audioSource);
+                const response = await fetch(audioData);
                 if (!response.ok) setTranscribingError(`HTTP error: ${response.status}`);
-                audioBlob = await response.blob();
+                const audioBlob = await response.blob();
 
-                // Convert the Blob to base64
-                const reader = new FileReader();
-                reader.readAsDataURL(audioBlob);
-                reader.onloadend = async () => {
-                    const base64Audio = reader.result as string;
-                    if(base64Audio) {
-                        setIsTranscribing(true);
-                        if(duration > 0) {
-                            setTranscribingTimeRemaining(duration + 20);
-                            startCountdown();
-                        }
-                        fetch("https://api.forwardit.lv/demo/transcribe", {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                              data: `data:audio/ogg;base64,${base64Audio.split(',')[1]}`
-                            })
-                        }).then(response => {
-                            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                            return response.json();
-                        }).then(data => {
-                            setTranscript(data.text.startsWith(" ") ? data.text.substring(1) : data.text);
-                        }).catch(error => {
-                            setTranscribingError(error?.message || "Demo page is not working at the moment. Please try again later")
-                        }).finally(() => {
-                            setIsTranscribing(false);
-                            setTranscribingTimeRemaining(0)
-                        })
-                    }
-                };
+                const formData = new FormData();
+                formData.append("file", audioBlob, "audioFile.ogg");
+
+                setIsTranscribing(true);
+
+                fetch("https://api.forwardit.lv/demo/transcribe", {
+                    method: 'POST',
+                    body: formData,
+                }).then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.json();
+                }).then(data => {
+                    setTranscript(data.text.startsWith(" ") ? data.text.substring(1) : data.text);
+                }).catch(error => {
+                    setTranscribingError(error?.message || "Demo page is not working at the moment. Please try again later");
+                }).finally(() => {
+                    setIsTranscribing(false);
+                });
             } catch (error) {
                 console.error('Error sending audio to server:', error);
             }
         };
-
         if (audioData) {
             if(duration > 300) {
                 setTranscribingError("Audio file is too long. Please choose a shorter file");
@@ -243,8 +243,7 @@ function App() {
                                     {isTranscribing && (
                                         <Stack direction={"column"} align={"center"}>
                                             <CircularProgress isIndeterminate color={"#e33832"}/>
-                                            <Text fontSize={"sm"} pt={2}>Please wait while we transcribe your audio. {duration ? "Approximate time remaining:" : ""}</Text>
-                                            {duration && <Text fontSize='2xl'>{transcribingTimeRemaining > 0 ? formatTime(transcribingTimeRemaining) : "very soon"}</Text>}
+                                            <Text fontSize={"sm"} pt={2}>Please wait while we transcribe your audio</Text>
                                         </Stack>
                                     )}
                                     {!isTranscribing && transcript.length && (
