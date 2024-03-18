@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.8b600fd3.css",
-    "main.js": "/static/js/main.52d12bda.js",
+    "main.js": "/static/js/main.fb8cdb9f.js",
     "static/js/787.d4aba7ab.chunk.js": "/static/js/787.d4aba7ab.chunk.js",
     "static/media/LV-radio.ogg": "/static/media/LV-radio.49bab290518162ed3df4.ogg",
     "static/media/EN-voicemail.mp3": "/static/media/EN-voicemail.9dca97f8e89038e01081.mp3",
@@ -10,11 +10,11 @@
     "static/media/forwardit-logo-white-red.png": "/static/media/forwardit-logo-white-red.82d7efe45450a1bdc574.png",
     "index.html": "/index.html",
     "main.8b600fd3.css.map": "/static/css/main.8b600fd3.css.map",
-    "main.52d12bda.js.map": "/static/js/main.52d12bda.js.map",
+    "main.fb8cdb9f.js.map": "/static/js/main.fb8cdb9f.js.map",
     "787.d4aba7ab.chunk.js.map": "/static/js/787.d4aba7ab.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.8b600fd3.css",
-    "static/js/main.52d12bda.js"
+    "static/js/main.fb8cdb9f.js"
   ]
 }
