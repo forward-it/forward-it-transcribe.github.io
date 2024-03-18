@@ -7,7 +7,6 @@ import logo from'./forwardit-logo-white-red.png';
 import {AutoResizeTextarea} from "./components/AutoResizeTextArea";
 const sampleLV = require("./samples/LV-woman.mp3");
 const sampleLVParliament = require("./samples/LV-parliament.mp3");
-const sampleLVRadio = require("./samples/LV-radio.ogg");
 const sampleEN = require("./samples/EN-voicemail.mp3");
 
 
@@ -204,7 +203,6 @@ function App() {
                                             <option value={""}>None</option>
                                             <option value={sampleLV}>LV: Woman Speaking (8 sec)</option>
                                             <option value={sampleLVParliament}>LV: Parliament Session Opening (14 sec)</option>
-                                            <option value={sampleLVRadio}>LV: Latvian Radio Weather Forecast (60 sec)</option>
                                             <option value={sampleEN}>EN: Voicemail Recording (51 sec)</option>
                                         </Select>
                                     </Stack>
